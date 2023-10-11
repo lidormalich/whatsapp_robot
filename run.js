@@ -1,5 +1,5 @@
 const fs = require("fs");
-const { Client, LocalAuth } = require("whatsapp-web.js");
+const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
 const mongoose = require("mongoose");
 const WaMSG = require("./models/WaMSG");
@@ -13,6 +13,7 @@ const {
 const User = require("./models/User");
 const { checkHadran, updateHadranSW, updateHadranSupport, addHadranDevice } = require("./checkHadran");
 const { Admin } = require("mongodb");
+const { checkIfIsAdmin, editUser } = require("./Users");
 require("dotenv").config();
 
 mongoose.Promise = global.Promise;
@@ -87,20 +88,19 @@ const getTimeStamp = async () => {
     //     date.getSeconds();
     return time;
 };
-const checkIfIsAdmin = async (number) => {
-    let numberToCheck = number;
-    if (!numberToCheck.endsWith('@c.us')) { numberToCheck = numberToCheck + "@c.us" }
-    let [userInfo] = await User.find({ number: numberToCheck });
-    if (userInfo.number == numberToCheck) {
-        return userInfo.isAdmin;
-    }
-    return false;
-}
+const ImagetoDataURLBase64 = url => fetch(url)
+    .then(response => response.blob())
+    .then(blob => new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+    }))
+
 
 client.on("qr", (qr) => {
     qrcode.generate(qr, { small: true });
 });
-
 client.on("ready", async () => {
     console.log("Client is ready!");
     const number = "0526761204"; //   Message to Admin
@@ -123,9 +123,11 @@ client.on("ready", async () => {
 
 client.on("message", async (message) => {
     let havereplay = false;
+    let media = "";
+    const chat = await message.getChat();
     let lastMSG = await User.find({ number: message.from });
-    if (!lastMSG) {
-        let check = await User.create({ number: message.from, lastMSG: "" });
+    if (!lastMSG[0]) {
+        lastMSG = await User.create({ number: message.from, lastMSG: "" });
     }
     lastMSG = lastMSG[0]?.lastMSG;
     const contact = await message.getContact();
@@ -134,7 +136,7 @@ client.on("message", async (message) => {
     const msgfrom = message.from;
     const time = await getTimeStamp();
     const isAdmin = await checkIfIsAdmin(message.from)
-    console.log({ message: msg, from: message.from, isAdmin });
+    console.log({ message: msg, from: message.from, isAdmin, isAdmin: false });
 
     //   get all arry message
     let arrMSG = await WaMSG.find({});
@@ -149,7 +151,6 @@ client.on("message", async (message) => {
             break;
         case "הדרן":
             updatelastMSG(msg, msgfrom);
-
             let res = await checkHadran(msg);
             res += `
              *מעודכן לתאריך ${time}*`;
@@ -179,6 +180,19 @@ client.on("message", async (message) => {
             }
             havereplay = true;
             break;
+        case "עריכת אדמין":
+            if (isAdmin) {
+                let res3 = await editUser(msg);
+                res3 += `
+             *עודכן בתאריך ${time}*`;
+                client.sendMessage(msgfrom, res3);
+
+            } else {
+                client.sendMessage(msgfrom, "אין הרשאות מתאימות" + `
+             *מעודכן לתאריך ${time}*`)
+            }
+            havereplay = true;
+            break;
         case "הוספת מכשיר":
             if (isAdmin) {
                 let res3 = await addHadranDevice(msg);
@@ -200,11 +214,15 @@ client.on("message", async (message) => {
         if (msg === item.roll) {
             switch (msg) {
                 case "בדיקת IMEI":
+                    media = await MessageMedia.fromUrl('https://www.imei.info/static/imei/img/illustration1.png');
+                    chat.sendMessage(media);
                     updatelastMSG(msg, msgfrom);
                     client.sendMessage(msgfrom, item.res);
                     havereplay = true;
                     break;
                 case "הדרן":
+                    media = await MessageMedia.fromUrl('https://haredimnet.co.il/user_images/businesses_index/biz_11803076.jpg');
+                    chat.sendMessage(media);
                     client.sendMessage(msgfrom, item.res);
                     updatelastMSG(msg, msgfrom);
                     havereplay = true;
@@ -220,6 +238,11 @@ client.on("message", async (message) => {
                     havereplay = true;
                     break;
                 case "הוספת מכשיר":
+                    client.sendMessage(msgfrom, item.res);
+                    updatelastMSG(msg, msgfrom);
+                    havereplay = true;
+                    break;
+                case "עריכת אדמין":
                     client.sendMessage(msgfrom, item.res);
                     updatelastMSG(msg, msgfrom);
                     havereplay = true;
