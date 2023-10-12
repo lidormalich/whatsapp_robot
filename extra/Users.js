@@ -11,7 +11,7 @@ const checkIfIsAdmin = async (number) => {
   }
   return false;
 }
-async function editUser(info) {
+async function editUserPermission(info) {
   try {
     let numberOem = info;
     let number = info.slice(0, info.indexOf(' '));
@@ -43,4 +43,68 @@ async function editUser(info) {
     console.log(error);
   }
 }
-module.exports = { checkIfIsAdmin, editUser };
+async function editUserPermissionHadran(info) {
+  try {
+    let numberOem = info;
+    let number = info.slice(0, info.indexOf(' '));
+    if (!number.endsWith('@c.us')) { number = number + "@c.us" }
+    let isHadran1 = info.slice(info.indexOf(' ') + 1, info.length);
+    let isHadran;
+
+    switch (isHadran1) {
+      case "הסרה":
+        isHadran = false;
+        break;
+      case "הוספה":
+        isHadran = true;
+        break;
+      default:
+        isHadran = false;
+        break;
+    }
+
+
+    let UserDB = await User.findOneAndUpdate({ number }, { isHadran },
+      { new: true });
+
+    if (!UserDB) {
+      return "לא נמצא משתמש";
+    }
+    return `המשתמש ${numberOem} עודכן בהצלחה`;
+  } catch (error) {
+    console.log(error);
+  }
+}
+async function editUserBlock(info) {
+  try {
+    let numberOem = info;
+    let number = info.slice(0, info.indexOf(' '));
+    if (!number.endsWith('@c.us')) { number = number + "@c.us" }
+    let isBlock1 = info.slice(info.indexOf(' ') + 1, info.length);
+    let isBlock;
+
+    switch (isBlock1) {
+      case "חסימה":
+        isBlock = true;
+        break;
+      case "פתיחה":
+        isBlock = false;
+        break;
+      default:
+        isBlock = false;
+        break;
+    }
+
+
+    let UserDB = await User.findOneAndUpdate({ number }, { isBlock },
+      { new: true });
+
+    if (!UserDB) {
+      return "לא נמצא משתמש";
+    }
+    return `המשתמש ${numberOem} עודכן בהצלחה`;
+  } catch (error) {
+    console.log(error);
+  }
+}
+module.exports = { checkIfIsAdmin, editUserPermission, editUserBlock, editUserPermissionHadran };

@@ -13,7 +13,7 @@ const {
 const User = require("./models/User");
 const { checkHadran, updateHadranSW, updateHadranSupport, addHadranDevice } = require("./extra/checkHadran");
 const { Admin } = require("mongodb");
-const { checkIfIsAdmin, editUser } = require("./extra/Users");
+const { checkIfIsAdmin, editUserPermission, editUserBlock, editUserPermissionHadran } = require("./extra/Users");
 require("dotenv").config();
 
 mongoose.Promise = global.Promise;
@@ -123,20 +123,28 @@ client.on("ready", async () => {
 
 client.on("message", async (message) => {
     let havereplay = false;
-    let media = "";
-    const chat = await message.getChat();
-    let lastMSG = await User.find({ number: message.from });
-    if (!lastMSG[0]) {
-        lastMSG = await User.create({ number: message.from, lastMSG: "" });
-    }
-    lastMSG = lastMSG[0]?.lastMSG;
+    let media = "", lastMSG = "";
+
     const contact = await message.getContact();
     const name = contact.pushname;
     const msg = message.body;
     const msgfrom = message.from;
+
+    const chat = await message.getChat();
+
+    let userInfo = await User.find({ number: message.from });
+    if (!userInfo[0]) {
+        userInfo = await User.create({ number: message.from, lastMSG: "", isBlock: false, isHadran: false });
+        media = await MessageMedia.fromUrl('https://i.imgur.com/43Rj0m0.png');
+        chat.sendMessage(media);
+        client.sendMessage(msgfrom, "שלום וברוכים הבאים לרובוט לעזרה רשום עזרה");
+    }
+    lastMSG = userInfo[0]?.lastMSG;
+    if (userInfo[0].isBlock) return;
     const time = await getTimeStamp();
     const isAdmin = await checkIfIsAdmin(message.from)
-    console.log({ message: msg, from: message.from, isAdmin, isAdmin: false });
+    const isHadran = userInfo[0].isHadran;
+    console.log({ message: msg, from: message.from, isAdmin });
 
     //   get all arry message
     let arrMSG = await WaMSG.find({});
@@ -144,7 +152,6 @@ client.on("message", async (message) => {
     switch (lastMSG) {
         case "בדיקת IMEI":
             let cleanLostRes = await readIMEIStatus(msg, name);
-            // console.log({ response: cleanLostRes });
             client.sendMessage(msgfrom, cleanLostRes);
             havereplay = true;
             updatelastMSG(msg, msgfrom);
@@ -158,7 +165,7 @@ client.on("message", async (message) => {
             havereplay = true;
             break;
         case "עדכון מכשיר הדרן":
-            if (isAdmin) {
+            if (isAdmin || isHadran) {
                 let respo1 = await updateHadranSupport(msg);
                 respo1 += `
              *מעודכן לתאריך ${time}*`
@@ -170,7 +177,7 @@ client.on("message", async (message) => {
             havereplay = true;
             break;
         case "עדכון גרסאות הדרן":
-            if (isAdmin) {
+            if (isAdmin || isHadran) {
                 let res2 = await updateHadranSW(msg);
                 client.sendMessage(msgfrom, res2); res2 += `
              *מעודכן לתאריך ${time}*`
@@ -180,21 +187,31 @@ client.on("message", async (message) => {
             }
             havereplay = true;
             break;
-        case "עריכת אדמין":
-            if (isAdmin) {
-                let res3 = await editUser(msg);
-                res3 += `
+        case "עריכת אדמין": if (isAdmin) {
+            let res4 = await editUserPermission(msg);
+            res4 += `
              *עודכן בתאריך ${time}*`;
-                client.sendMessage(msgfrom, res3);
+            client.sendMessage(msgfrom, res4);
+
+        } else {
+            client.sendMessage(msgfrom, "פקודה לא חוקית")
+        }
+            havereplay = true;
+            break;
+        case "עריכת חסימה אדמין":
+            if (isAdmin) {
+                let res4 = await editUserBlock(msg);
+                res4 += `
+             *עודכן בתאריך ${time}*`;
+                client.sendMessage(msgfrom, res4);
 
             } else {
-                client.sendMessage(msgfrom, "אין הרשאות מתאימות" + `
-             *מעודכן לתאריך ${time}*`)
+                client.sendMessage(msgfrom, "פקודה לא חוקית")
             }
             havereplay = true;
             break;
         case "הוספת מכשיר":
-            if (isAdmin) {
+            if (isAdmin || isHadran) {
                 let res3 = await addHadranDevice(msg);
                 client.sendMessage(msgfrom, res3); res3 += `
              *מעודכן לתאריך ${time}*`
@@ -204,7 +221,34 @@ client.on("message", async (message) => {
             }
             havereplay = true;
             break;
+        case "שליחת הודעה אדמין":
+            if (isAdmin) {
+                let number = info.slice(0, info.indexOf(' '));
+                if (!number.endsWith('@c.us')) { number = number + "@c.us" }
+                let message = info.slice(info.indexOf(' ') + 1, info.length);
 
+                client.sendMessage(phone, message);
+                client.sendMessage(msgfrom, "נשלח בהצלחה"
+                    + `
+             *מעודכן לתאריך ${time}*`);
+
+            } else {
+                client.sendMessage(msgfrom, "פקודה לא חוקית")
+            }
+            havereplay = true;
+            break;
+        case "עריכת משתמש הדרן":
+            if (isAdmin) {
+                let res5 = await editUserPermissionHadran(msg);
+                res5 += `
+             *עודכן בתאריך ${time}*`;
+                client.sendMessage(msgfrom, res5);
+
+            } else {
+                client.sendMessage(msgfrom, "פקודה לא חוקית")
+            }
+            havereplay = true;
+            break;
         default:
             break;
     }
@@ -245,6 +289,19 @@ client.on("message", async (message) => {
                     havereplay = true;
                     break;
                 case "עריכת אדמין":
+                    client.sendMessage(msgfrom, item.res);
+                    updatelastMSG(msg, msgfrom);
+                    havereplay = true;
+                case "עריכת חסימה אדמין":
+                    client.sendMessage(msgfrom, item.res);
+                    updatelastMSG(msg, msgfrom);
+                    havereplay = true;
+                    break;
+                case "שליחת הודעה אדמין":
+                    client.sendMessage(msgfrom, item.res);
+                    updatelastMSG(msg, msgfrom);
+                    havereplay = true;
+                case "עריכת משתמש הדרן":
                     client.sendMessage(msgfrom, item.res);
                     updatelastMSG(msg, msgfrom);
                     havereplay = true;
