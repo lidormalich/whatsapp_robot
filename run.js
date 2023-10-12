@@ -139,13 +139,17 @@ client.on("message", async (message) => {
 
     let userInfo = await User.find({ number: message.from });
     if (!userInfo[0]) {
-        userInfo = await User.create({ number: message.from, lastMSG: "", isBlock: false, isHadran: false });
+        userInfo = await User.create({ number: message.from, lastMSG: "", isBlock: false, isBlock: false, isHadran: false });
         media = await MessageMedia.fromUrl('https://i.imgur.com/43Rj0m0.png');
         chat.sendMessage(media);
         client.sendMessage(msgfrom, "שלום וברוכים הבאים לרובוט לעזרה רשום עזרה");
     }
     lastMSG = userInfo[0]?.lastMSG;
-    if (userInfo[0].isBlock) return;
+    try {
+        if (userInfo[0]?.isBlock) return;
+    } catch (error) {
+        console.log(error);
+    }
     const time = await getTimeStamp();
     const isAdmin = await checkIfIsAdmin(message.from)
     const isHadran = userInfo[0].isHadran;

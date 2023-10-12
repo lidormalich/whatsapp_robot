@@ -7,7 +7,7 @@ const checkIfIsAdmin = async (number) => {
   if (!numberToCheck.endsWith('@c.us')) { numberToCheck = numberToCheck + "@c.us" }
   let [userInfo] = await User.find({ number: numberToCheck });
   if (userInfo.number == numberToCheck) {
-    return userInfo.isAdmin;
+    return userInfo.isAdmin || false;
   }
   return false;
 }
