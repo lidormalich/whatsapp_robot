@@ -9,11 +9,11 @@ const {
     checkImeiPelephone,
     checkImeiPartner,
     checkImeiCelcom,
-} = require("./checkImei");
+} = require("./extra/checkImei");
 const User = require("./models/User");
-const { checkHadran, updateHadranSW, updateHadranSupport, addHadranDevice } = require("./checkHadran");
+const { checkHadran, updateHadranSW, updateHadranSupport, addHadranDevice } = require("./extra/checkHadran");
 const { Admin } = require("mongodb");
-const { checkIfIsAdmin, editUser } = require("./Users");
+const { checkIfIsAdmin, editUser } = require("./extra/Users");
 require("dotenv").config();
 
 mongoose.Promise = global.Promise;
@@ -209,8 +209,10 @@ client.on("message", async (message) => {
             break;
     }
 
-
+    msg.toUpperCase();
+    console.log({ msg });
     for (const item of arrMSG) {
+
         if (msg === item.roll) {
             switch (msg) {
                 case "בדיקת IMEI":

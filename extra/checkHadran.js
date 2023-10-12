@@ -1,4 +1,4 @@
-const HadranModel = require("./models/HadranModel");
+const HadranModel = require("../models/HadranModel");
 
 async function checkHadran(model) {
   try {

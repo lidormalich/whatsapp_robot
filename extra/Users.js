@@ -1,6 +1,5 @@
-const HadranModel = require("./models/HadranModel");
-const User = require("./models/User");
-
+const HadranModel = require("../models/HadranModel");
+const User = require("../models/User");
 
 
 const checkIfIsAdmin = async (number) => {
@@ -14,6 +13,7 @@ const checkIfIsAdmin = async (number) => {
 }
 async function editUser(info) {
   try {
+    let numberOem = info;
     let number = info.slice(0, info.indexOf(' '));
     if (!number.endsWith('@c.us')) { number = number + "@c.us" }
     let isAdmin1 = info.slice(info.indexOf(' ') + 1, info.length);
@@ -38,7 +38,7 @@ async function editUser(info) {
     if (!UserDB) {
       return "לא נמצא משתמש";
     }
-    return "המשתמש עודכן בהצלחה";
+    return `המשתמש ${numberOem} עודכן בהצלחה`;
   } catch (error) {
     console.log(error);
   }
