@@ -97,6 +97,11 @@ const ImagetoDataURLBase64 = url => fetch(url)
         reader.readAsDataURL(blob)
     }))
 
+function isNumeric(num) {
+    if (typeof num === "string") {
+        return (!isNaN(num));
+    }
+}
 
 client.on("qr", (qr) => {
     qrcode.generate(qr, { small: true });
@@ -187,20 +192,21 @@ client.on("message", async (message) => {
             }
             havereplay = true;
             break;
-        case "עריכת אדמין": if (isAdmin) {
-            let res4 = await editUserPermission(msg);
-            res4 += `
+        case "עריכת אדמין":
+            if (isAdmin) {
+                let res4 = await editUserPermission(msg, client);
+                res4 += `
              *עודכן בתאריך ${time}*`;
-            client.sendMessage(msgfrom, res4);
+                client.sendMessage(msgfrom, res4);
 
-        } else {
-            client.sendMessage(msgfrom, "פקודה לא חוקית")
-        }
+            } else {
+                client.sendMessage(msgfrom, "פקודה לא חוקית")
+            }
             havereplay = true;
             break;
         case "עריכת חסימה אדמין":
             if (isAdmin) {
-                let res4 = await editUserBlock(msg);
+                let res4 = await editUserBlock(msg, client);
                 res4 += `
              *עודכן בתאריך ${time}*`;
                 client.sendMessage(msgfrom, res4);
@@ -223,14 +229,21 @@ client.on("message", async (message) => {
             break;
         case "שליחת הודעה אדמין":
             if (isAdmin) {
-                let number = info.slice(0, info.indexOf(' '));
-                if (!number.endsWith('@c.us')) { number = number + "@c.us" }
-                let message = info.slice(info.indexOf(' ') + 1, info.length);
+                console.log("ABC");
+                let toNumber = msg.slice(0, msg.indexOf(' '));
+                if (!isNumeric(toNumber)) return client.sendMessage(msgfrom, "מספר לא חוקי")
 
-                client.sendMessage(phone, message);
+                if (!toNumber.endsWith('@c.us')) { toNumber = toNumber + "@c.us" }
+                let message = msg.slice(msg.indexOf(' ') + 1, msg.length);
+
+                console.log({ toNumber, msg, message });
+                console.log("FFFF");
+
+
+                client.sendMessage(toNumber, message);
                 client.sendMessage(msgfrom, "נשלח בהצלחה"
                     + `
-             *מעודכן לתאריך ${time}*`);
+                 *מעודכן לתאריך ${time}*`);
 
             } else {
                 client.sendMessage(msgfrom, "פקודה לא חוקית")
@@ -239,7 +252,7 @@ client.on("message", async (message) => {
             break;
         case "עריכת משתמש הדרן":
             if (isAdmin) {
-                let res5 = await editUserPermissionHadran(msg);
+                let res5 = await editUserPermissionHadran(msg, client);
                 res5 += `
              *עודכן בתאריך ${time}*`;
                 client.sendMessage(msgfrom, res5);

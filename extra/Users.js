@@ -11,10 +11,12 @@ const checkIfIsAdmin = async (number) => {
   }
   return false;
 }
-async function editUserPermission(info) {
+async function editUserPermission(info, client) {
   try {
     let numberOem = info;
     let number = info.slice(0, info.indexOf(' '));
+    if (!isNumeric(number)) return client.sendMessage(msgfrom, "מספר לא חוקי")
+
     if (!number.endsWith('@c.us')) { number = number + "@c.us" }
     let isAdmin1 = info.slice(info.indexOf(' ') + 1, info.length);
     let isAdmin;
@@ -43,10 +45,12 @@ async function editUserPermission(info) {
     console.log(error);
   }
 }
-async function editUserPermissionHadran(info) {
+async function editUserPermissionHadran(info, client) {
   try {
     let numberOem = info;
     let number = info.slice(0, info.indexOf(' '));
+    if (!isNumeric(number)) return client.sendMessage(msgfrom, "מספר לא חוקי")
+
     if (!number.endsWith('@c.us')) { number = number + "@c.us" }
     let isHadran1 = info.slice(info.indexOf(' ') + 1, info.length);
     let isHadran;
@@ -75,10 +79,12 @@ async function editUserPermissionHadran(info) {
     console.log(error);
   }
 }
-async function editUserBlock(info) {
+async function editUserBlock(info, client) {
   try {
     let numberOem = info;
     let number = info.slice(0, info.indexOf(' '));
+    if (!isNumeric(number)) return client.sendMessage(msgfrom, "מספר לא חוקי")
+
     if (!number.endsWith('@c.us')) { number = number + "@c.us" }
     let isBlock1 = info.slice(info.indexOf(' ') + 1, info.length);
     let isBlock;
