@@ -152,7 +152,7 @@ client.on("message", async (message) => {
     }
     const time = await getTimeStamp();
     const isAdmin = await checkIfIsAdmin(message.from)
-    const isHadran = userInfo[0].isHadran;
+    const isHadran = userInfo[0]?.isHadran || false;
     console.log({ message: msg, from: message.from, isAdmin });
 
     //   get all arry message
